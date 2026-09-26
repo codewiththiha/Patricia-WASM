@@ -1,0 +1,11 @@
+# native build outputs
+engine/patricia
+engine/patricia.exe
+engine/patricia_aarch64
+engine/data
+
+# wasm build outputs (prebuilt copies are committed under web/pkg)
+engine/wasm/.build/
+engine/wasm/pkg/
+
+node_modules/

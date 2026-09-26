@@ -135,9 +135,23 @@ struct alignas(64) NNUE_Params {
   int16_t output_bias;
 };
 
+#if defined(__EMSCRIPTEN__)
+// The wasm LLVM backend does not support .incbin inline assembly.
+// The nets are embedded via C23 #embed in wasm/nets_embedded.c instead,
+// using the same symbol names incbin would have generated.
+extern "C" {
+extern const unsigned char g_nnueData[];
+extern const unsigned int g_nnueSize;
+extern const unsigned char g_nnue2Data[];
+extern const unsigned int g_nnue2Size;
+extern const unsigned char g_nnue3Data[];
+extern const unsigned int g_nnue3Size;
+}
+#else
 INCBIN(nnue, "nets/fingolfin.nnue");
 INCBIN(nnue2, "nets/finarfin.nnue");
 INCBIN(nnue3, "nets/feanor.nnue");
+#endif
 
 [[nodiscard]] inline const NNUE_Params &get_nnue(size_t index) noexcept {
   static const std::array<const NNUE_Params *, NUM_NETS> nets = {
