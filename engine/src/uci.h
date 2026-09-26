@@ -159,21 +159,11 @@ Move uci_to_internal(const Position &position, std::string uci) {
   return 0;
 }
 
-void uci(ThreadInfo &thread_info, Position &position) {
-  setvbuf(stdin, NULL, _IONBF, 0);
-  setvbuf(stdout, NULL, _IONBF, 0);
-
-  printf("Patricia Chess Engine, written by Adam Kulju\n\n\n");
-
-  new_game(thread_info, TT);
-  set_board(position, thread_info,
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-  std::string input;
-
-  std::thread s;
-
-  while (getline(std::cin, input)) {
+// Executes a single UCI command. Extracted from the uci() getline loop so
+// that alternative front-ends (e.g. the WebAssembly build) can feed commands
+// one at a time.
+void uci_execute_command(const std::string &input, ThreadInfo &thread_info,
+                         Position &position, std::thread &s) {
 
     std::istringstream input_stream(input);
 
@@ -250,7 +240,7 @@ void uci(ThreadInfo &thread_info, Position &position) {
           thread_data.is_frc = false;
         }
 
-        continue;
+        return;
       }
 
       else if (name == "SyzygyPath") {
@@ -458,5 +448,23 @@ void uci(ThreadInfo &thread_info, Position &position) {
     else if (command == "bench") {
       bench(position, thread_info);
     }
+}
+
+void uci(ThreadInfo &thread_info, Position &position) {
+  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
+
+  printf("Patricia Chess Engine, written by Adam Kulju\n\n\n");
+
+  new_game(thread_info, TT);
+  set_board(position, thread_info,
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+  std::string input;
+
+  std::thread s;
+
+  while (getline(std::cin, input)) {
+    uci_execute_command(input, thread_info, position, s);
   }
 }
