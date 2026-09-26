@@ -10,6 +10,17 @@ constexpr std::array<int, 20> skill_levels = {
 
 void run_thread(Position &position, ThreadInfo &thread_info, std::thread &s) {
 
+#if defined(PATRICIA_SINGLE_THREAD)
+  // Single-threaded (no-pthreads WebAssembly) build: run the search
+  // synchronously on the calling thread. "stop" cannot interrupt a running
+  // search in this mode, so callers should always give explicit limits
+  // (depth / nodes / movetime / wtime+btime).
+  if (thread_info.is_human) {
+    search_human(position, thread_info);
+  } else {
+    search_position(position, thread_info, TT);
+  }
+#else
   // This wrapper function allows the user to call the "stop" command to stop
   // the search immediately.
   if (thread_info.is_human) {
@@ -20,6 +31,7 @@ void run_thread(Position &position, ThreadInfo &thread_info, std::thread &s) {
     s = std::thread(search_position, std::ref(position), std::ref(thread_info),
                     std::ref(TT));
   }
+#endif
 }
 
 uint64_t perft(int depth, Position &position, bool first,
@@ -262,6 +274,10 @@ void uci_execute_command(const std::string &input, ThreadInfo &thread_info,
 
       else if (name == "Threads") {
 
+#if defined(PATRICIA_SINGLE_THREAD)
+        // No pthreads available in this build; always run with 1 thread.
+        value = 1;
+#endif
         thread_data.terminate = true;
 
         reset_barrier.arrive_and_wait();
