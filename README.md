@@ -12,6 +12,61 @@
 
 A killer bunny who will not hesitate to ram as many pieces as possible down your throat, Patricia is the most aggressive chess engine the world has ever seen.
 
+This fork adds a WebAssembly build of the engine with the same JavaScript
+API as stockfish.wasm, so Patricia can run directly in the browser.
+
+***
+
+## WebAssembly (Patricia.wasm)
+
+Prebuilt binaries are committed under [`web/pkg/`](web/pkg):
+
+- `patricia.js` / `patricia.wasm` - multithreaded (pthreads). Supports the
+  full UCI flow including `go infinite` + `stop`. Requires a
+  crossOriginIsolated page, i.e. the server must send
+  `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`.
+- `patricia-single.js` / `patricia-single.wasm` - single-threaded fallback
+  that runs on any host. The search executes synchronously, so always give
+  explicit limits (`go depth 18`, `go movetime 3000`, ...).
+
+### Basic usage
+
+```js
+// in a Web Worker (recommended): importScripts("patricia.js")
+Patricia().then(engine => {
+  engine.addMessageListener(line => console.log(line));
+  engine.postMessage("uci");
+  engine.postMessage("position startpos moves e2e4 e7e5");
+  engine.postMessage("go depth 20");
+});
+```
+
+The interface is identical to stockfish.wasm: `postMessage(uciCommand)` in,
+one line per `addMessageListener` callback out. All standard UCI commands
+are supported (`uci`, `isready`, `ucinewgame`, `position`, `go`, `stop`,
+`setoption`, ...), plus Patricia's `Skill_Level` option (1-20 for human-like
+play from about 500 to 3000 Elo, 21 for full strength).
+
+Pick the right build at runtime:
+
+```js
+const script = self.crossOriginIsolated ? "patricia.js" : "patricia-single.js";
+```
+
+### Try it / build it
+
+A ready-made browser demo (UCI console, worker relay, COOP/COEP server)
+lives in [`web/`](web):
+
+```bash
+cd web && python3 serve.py 8000   # then open http://localhost:8000
+```
+
+To rebuild the wasm from source, activate an [emsdk](https://emscripten.org)
+environment and run `./engine/wasm/build.sh`. Details, API reference and
+porting notes are in [`engine/wasm/README.md`](engine/wasm/README.md).
+
 ***
 
 ## Analyze with Patricia
