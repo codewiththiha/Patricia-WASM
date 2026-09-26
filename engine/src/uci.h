@@ -213,6 +213,8 @@ void uci_execute_command(const std::string &input, ThreadInfo &thread_info,
              "option name SyzygyPath type string default null\n"
              "option name MultiPV type spin default 1 min 1 max 255\n"
              "option name Skill_Level type spin default 21 min 1 max 21\n"
+             "option name UCI_LimitStrength type check default false\n"
+             "option name UCI_Elo type spin default 2500 min 500 max 3000\n"
              "option name Move_Overhead type spin default 50 min 0 max 5000\n"
              "option name UCI_Chess960 type check default false\n");
 
@@ -240,18 +242,40 @@ void uci_execute_command(const std::string &input, ThreadInfo &thread_info,
       input_stream >> name;
       input_stream >> command;
 
-      if (name == "UCI_LimitStrength" || name == "UCI_Chess960") {
-        std::string value;
-        input_stream >> value;
-        if (value == "true") {
-          thread_data.is_frc = true;
-
+      if (name == "UCI_LimitStrength") {
+        std::string valStr;
+        input_stream >> valStr;
+        if (valStr == "true") {
+          thread_info.is_human = true;
+        } else {
+          thread_info.is_human = false;
         }
+        return;
+      }
 
-        else {
-          thread_data.is_frc = false;
+      else if (name == "UCI_Chess960") {
+        std::string valStr;
+        input_stream >> valStr;
+        thread_data.is_frc = (valStr == "true");
+        return;
+      }
+
+      else if (name == "UCI_Elo") {
+        int eloVal;
+        input_stream >> eloVal;
+        thread_info.is_human = true;
+
+        int closestIdx = 0;
+        int minDiff = 999999;
+        for (size_t i = 0; i < skill_levels.size(); i++) {
+          int diff = std::abs(skill_levels[i] - eloVal);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = (int)i;
+          }
         }
-
+        int to_elo = skill_levels[closestIdx];
+        thread_info.cp_loss = 120 - (to_elo / 25);
         return;
       }
 
