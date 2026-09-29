@@ -1,0 +1,86 @@
+name: WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - '.github/workflows/wasm.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & test Patricia WASM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          # LLVM 20: required for the C23 #embed that replaces incbin in
+          # nets_embedded.c. Pinned so a newer LLVM cannot silently change
+          # codegen for the committed binaries.
+          version: 4.0.23
+
+      - name: Verify toolchain
+        run: |
+          em++ --version
+          node --version
+
+      - name: Build both wasm variants
+        run: ./engine/wasm/build.sh
+
+      - name: Smoke test threaded build
+        run: node engine/wasm/test.js engine/wasm/pkg/patricia.js
+
+      - name: Smoke test single-threaded build
+        run: node engine/wasm/test.js engine/wasm/pkg/patricia-single.js
+
+      - name: Verify Aggressiveness option is advertised
+        run: |
+          node -e "
+          const Patricia = require('./engine/wasm/pkg/patricia-single.js');
+          Patricia().then((engine) => {
+            const seen = [];
+            engine.addMessageListener((line) => seen.push(line));
+            engine.postMessage('uci');
+            setTimeout(() => {
+              const line = seen.find((l) => l.includes('option name Aggressiveness'));
+              if (!line) {
+                console.error('FAIL: Aggressiveness option missing from uci output');
+                process.exit(1);
+              }
+              console.log('ok: ' + line);
+              process.exit(0);
+            }, 3000);
+          });
+          "
+
+      - name: Upload wasm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: patricia-wasm
+          path: engine/wasm/pkg/*
+          if-no-files-found: error
+
+      - name: Publish rebuilt binaries to web/pkg
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/pkg
+          if git diff --cached --quiet; then
+            echo 'No binary changes; nothing to publish.'
+            exit 0
+          fi
+          git commit -m 'build(wasm): publish engine binaries from CI'
+          git push
