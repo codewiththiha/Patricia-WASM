@@ -166,7 +166,7 @@ int eval(Position &position, ThreadInfo &thread_info) {
                 : s < -100 ? 10
                            : 20);
     } else {
-      bonus2 = 50 *
+      bonus2 = (50 * Aggressiveness / 100) *
                (eval > 500 ? 2
                 : eval > 0 ? 1
                            : 0) *
@@ -479,11 +479,12 @@ int search(int alpha, int beta, int depth, bool cutnode, Position &position,
     int draw_score = 1 - (thread_info.nodes & 3);
 
     int material = material_eval(position);
+    const int contempt = 50 * Aggressiveness / 100;
 
     if (material < -100) {
-      draw_score += 50;
+      draw_score += contempt;
     } else if (material > 100) {
-      draw_score -= 50;
+      draw_score -= contempt;
     }
 
     return draw_score;
@@ -1368,7 +1369,7 @@ void iterative_deepen(
           if (thread_info.best_scores[0] < -20) {
             thread_info.phase = PhaseTypes::Endgame;
             thread_info.nnue_state.reset_nnue(position, thread_info.phase);
-          } else if (thread_info.best_scores[0] > 400) {
+          } else if (thread_info.best_scores[0] > 40000 / Aggressiveness) {
             thread_info.phase = PhaseTypes::Sacrifice;
             thread_info.nnue_state.reset_nnue(position, thread_info.phase);
           } else {

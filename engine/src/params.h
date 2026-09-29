@@ -90,6 +90,9 @@ TUNE_PARAM(BmFactor1, 152, 100, 200);
 TUNE_PARAM(ScoreDropDiv, 540, 250, 850);
 TUNE_PARAM(ScoreDropMin, 90, 70, 100);
 TUNE_PARAM(ScoreDropMax, 118, 100, 140);
+// Scales Patricia's romantic style. 100 is the shipped default; higher values
+// enter the feanor sacrifice phase sooner and raise draw contempt.
+TUNE_PARAM(Aggressiveness, 100, 25, 300);
 
 #undef TUNE_PARAM
 

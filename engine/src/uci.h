@@ -216,6 +216,7 @@ void uci_execute_command(const std::string &input, ThreadInfo &thread_info,
              "option name UCI_LimitStrength type check default false\n"
              "option name UCI_Elo type spin default 2500 min 500 max 3000\n"
              "option name Move_Overhead type spin default 50 min 0 max 5000\n"
+             "option name Aggressiveness type spin default 100 min 25 max 300\n"
              "option name UCI_Chess960 type check default false\n");
 
       /*for (auto &param : params) {
