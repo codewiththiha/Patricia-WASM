@@ -38,11 +38,14 @@ jobs:
       - name: Build both wasm variants
         run: ./engine/wasm/build.sh
 
+      # test.js resolves its argument against its own directory.
       - name: Smoke test threaded build
-        run: node engine/wasm/test.js engine/wasm/pkg/patricia.js
+        working-directory: engine/wasm
+        run: node test.js pkg/patricia.js
 
       - name: Smoke test single-threaded build
-        run: node engine/wasm/test.js engine/wasm/pkg/patricia-single.js
+        working-directory: engine/wasm
+        run: node test.js pkg/patricia-single.js
 
       - name: Verify Aggressiveness option is advertised
         run: |
